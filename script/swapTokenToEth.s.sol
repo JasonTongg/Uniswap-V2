@@ -11,12 +11,14 @@ interface IERC20Minimal {
 }
 
 contract SwapUniToEth is Script {
-    TokenSwapContract public swapContract = TokenSwapContract(0x5deB5E322dA6ec413363Aef0399F3A5d24C8c1cB);
-
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
+        
+        address swapContractAddr = vm.envAddress("SWAP_CONTRACT");
+        TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
+        
         vm.startBroadcast(pk);
 
         address user = vm.addr(pk);
