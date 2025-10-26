@@ -9,8 +9,8 @@ contract DeployTokenSwap is Script {
         vm.startBroadcast(pk);
 
         new JasonToken(
-            0xF62c03E08ada871A0bEb309762E260a7a6a880E6,
-            0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3
+            0xeFF3521fb13228C767Ad6Dc3b934F9eFAC9c56aD,
+            0xeFF3521fb13228C767Ad6Dc3b934F9eFAC9c56aD
         );
 
         vm.stopBroadcast();

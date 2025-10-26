@@ -15,7 +15,7 @@ contract SwapSepoliaScript is Script {
         address swapContractAddr = vm.envAddress("SWAP_CONTRACT");
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
 
-        uint256 amountETH = 0.01 ether;
+        uint256 amountETH = 0.2 ether;
 
         uint256 expectedUNI = swapContract.getPriceETHtoToken(TOKEN_OUT, amountETH);
         console.log("If you swap", amountETH / 1e18, "ETH you will receive approx:", expectedUNI);

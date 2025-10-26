@@ -10,11 +10,13 @@ interface IERC20 {
 interface IUniswapV2Factory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
     function createPair(address tokenA, address tokenB) external returns (address pair);
+    function balanceOf(address owner) external view returns (uint);
 }
 
 interface IUniswapV2Pair {
     function token0() external view returns (address);
     function token1() external view returns (address);
+    function balanceOf(address owner) external view returns (uint);
 
     function getReserves() external view returns (
         uint112 reserve0,
@@ -103,7 +105,7 @@ contract TokenSwapContract {
     address public immutable ROUTER;
     IUniswapV2Router public router = IUniswapV2Router(ROUTER);
 
-    uint256 public slippageBasisPoints = 100;
+    uint256 public slippageBasisPoints = 1000;
 
     address public immutable FACTORY;
     IUniswapV2Factory public factory = IUniswapV2Factory(FACTORY);
@@ -125,7 +127,7 @@ contract TokenSwapContract {
 
     function swapToken(address tokenIn, address tokenOut, uint256 amountIn) external {
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-        IERC20(tokenIn).approve(ROUTER, amountIn);
+        IERC20(tokenIn).approve(address(router), amountIn);
 
         address[] memory path = new address[](2);
         path[0] = tokenIn;
@@ -155,7 +157,7 @@ contract TokenSwapContract {
 
     function swapTokenForETH(address tokenIn, uint256 amountIn) external {
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-        IERC20(tokenIn).approve(ROUTER, amountIn);
+        IERC20(tokenIn).approve(address(router), amountIn);
 
         address[] memory path = new address[](2);
         path[0] = tokenIn;
@@ -211,8 +213,8 @@ contract TokenSwapContract {
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountA);
         IERC20(tokenB).transferFrom(msg.sender, address(this), amountB);
 
-        IERC20(tokenA).approve(ROUTER, amountA);
-        IERC20(tokenB).approve(ROUTER, amountB);
+        IERC20(tokenA).approve(address(router), amountA);
+        IERC20(tokenB).approve(address(router), amountB);
 
         uint amountAMin = amountA * (10000 - slippageBasisPoints) / 10000;
         uint amountBMin = amountB * (10000 - slippageBasisPoints) / 10000;
@@ -234,7 +236,7 @@ contract TokenSwapContract {
     function addLiquidityETH(address token, uint amountToken) external payable returns (uint liquidity) {
         IERC20(token).transferFrom(msg.sender, address(this), amountToken);
 
-        IERC20(token).approve(ROUTER, amountToken);
+        IERC20(token).approve(address(router), amountToken);
 
         uint amountAMin = amountToken * (10000 - slippageBasisPoints) / 10000;
         uint amountEthMin = uint(msg.value) * (10000 - slippageBasisPoints) / 10000;
@@ -260,25 +262,14 @@ contract TokenSwapContract {
         require(pair != address(0), "Pool does not exist");
 
         IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
-        IUniswapV2Pair(pair).approve(ROUTER, liquidity);
-
-        // Get expected amounts returned by removing liquidity
-        // Note: We cannot use getAmountsOut for LP burn, so we read reserves first:
-        (uint reserveA, uint reserveB,) = IUniswapV2Pair(pair).getReserves();
-        uint totalSupply = IUniswapV2Pair(pair).totalSupply();
-
-        uint expectedA = (liquidity * reserveA) / totalSupply;
-        uint expectedB = (liquidity * reserveB) / totalSupply;
-
-        uint amountAMin = expectedA * (10000 - slippageBasisPoints) / 10000;
-        uint amountBMin = expectedB * (10000 - slippageBasisPoints) / 10000;
+        IUniswapV2Pair(pair).approve(address(router), liquidity);
 
         (amountA, amountB) = router.removeLiquidity(
             tokenA,
             tokenB,
             liquidity,
-            amountAMin,
-            amountBMin,
+            0,
+            0,
             msg.sender,
             block.timestamp + 300
         );
@@ -293,22 +284,13 @@ contract TokenSwapContract {
         require(pair != address(0), "Pool does not exist");
 
         IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
-        IUniswapV2Pair(pair).approve(ROUTER, liquidity);
-
-        (uint reserveToken, uint reserveWETH,) = IUniswapV2Pair(pair).getReserves();
-        uint totalSupply = IUniswapV2Pair(pair).totalSupply();
-
-        uint expectedToken = (liquidity * reserveToken) / totalSupply;
-        uint expectedETH = (liquidity * reserveWETH) / totalSupply;
-
-        uint amountTokenMin = expectedToken * (10000 - slippageBasisPoints) / 10000;
-        uint amountETHMin = expectedETH * (10000 - slippageBasisPoints) / 10000;
+        IUniswapV2Pair(pair).approve(address(router), liquidity);
 
         (amountToken, amountETH) = router.removeLiquidityETH(
             token,
             liquidity,
-            amountTokenMin,
-            amountETHMin,
+            0,
+            0,
             msg.sender,
             block.timestamp + 300
         );
