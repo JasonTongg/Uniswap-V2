@@ -10,27 +10,22 @@ interface IERC20 {
 interface IUniswapV2Factory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
     function createPair(address tokenA, address tokenB) external returns (address pair);
-    function balanceOf(address owner) external view returns (uint);
+    function balanceOf(address owner) external view returns (uint256);
 }
 
 interface IUniswapV2Pair {
     function token0() external view returns (address);
     function token1() external view returns (address);
-    function balanceOf(address owner) external view returns (uint);
+    function balanceOf(address owner) external view returns (uint256);
 
-    function getReserves() external view returns (
-        uint112 reserve0,
-        uint112 reserve1,
-        uint32 blockTimestampLast
-    );
+    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 
-    function totalSupply() external view returns (uint);
+    function totalSupply() external view returns (uint256);
 
-    function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address sender, address recipient, uint value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
+    function transfer(address to, uint256 value) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 value) external returns (bool);
 }
-
 
 interface IUniswapV2Router {
     function WETH() external pure returns (address);
@@ -60,45 +55,45 @@ interface IUniswapV2Router {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
-    
+
     function addLiquidity(
         address tokenA,
         address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin,
         address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB, uint liquidity);
+        uint256 deadline
+    ) external returns (uint256 amountA, uint256 amountB, uint256 liquidity);
 
     function addLiquidityETH(
         address token,
-        uint amountTokenDesired,
-        uint amountTokenMin,
-        uint amountETHMin,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
         address to,
-        uint deadline
-    ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+        uint256 deadline
+    ) external payable returns (uint256 amountToken, uint256 amountETH, uint256 liquidity);
 
     function removeLiquidity(
         address tokenA,
         address tokenB,
-        uint liquidity,
-        uint amountAMin,
-        uint amountBMin,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
         address to,
-        uint deadline
-    ) external returns (uint amountA, uint amountB);
+        uint256 deadline
+    ) external returns (uint256 amountA, uint256 amountB);
 
     function removeLiquidityETH(
         address token,
-        uint liquidity,
-        uint amountTokenMin,
-        uint amountETHMin,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin,
         address to,
-        uint deadline
-    ) external returns (uint amountToken, uint amountETH);
+        uint256 deadline
+    ) external returns (uint256 amountToken, uint256 amountETH);
 }
 
 contract TokenSwapContract {
@@ -112,13 +107,13 @@ contract TokenSwapContract {
 
     event Swapped(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut);
     event PoolCreated(address tokenA, address tokenB, address pair);
-    event LiquidityAdded(address tokenA, address tokenB, uint amountA, uint amountB, uint liquidity);
+    event LiquidityAdded(address tokenA, address tokenB, uint256 amountA, uint256 amountB, uint256 liquidity);
 
     constructor(address factoryAddress, address routerAddress) {
         factory = IUniswapV2Factory(factoryAddress);
         router = IUniswapV2Router(routerAddress);
     }
-    
+
     function _getMinAmountOut(address[] memory path, uint256 amountIn) internal view returns (uint256) {
         uint256[] memory amountsOut = router.getAmountsOut(amountIn, path);
         uint256 estimated = amountsOut[amountsOut.length - 1];
@@ -209,54 +204,44 @@ contract TokenSwapContract {
         emit PoolCreated(tokenA, tokenB, pair);
     }
 
-    function addLiquidity(address tokenA, address tokenB, uint amountA, uint amountB) external returns (uint liquidity) {
+    function addLiquidity(address tokenA, address tokenB, uint256 amountA, uint256 amountB)
+        external
+        returns (uint256 liquidity)
+    {
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountA);
         IERC20(tokenB).transferFrom(msg.sender, address(this), amountB);
 
         IERC20(tokenA).approve(address(router), amountA);
         IERC20(tokenB).approve(address(router), amountB);
 
-        uint amountAMin = amountA * (10000 - slippageBasisPoints) / 10000;
-        uint amountBMin = amountB * (10000 - slippageBasisPoints) / 10000;
+        uint256 amountAMin = amountA * (10000 - slippageBasisPoints) / 10000;
+        uint256 amountBMin = amountB * (10000 - slippageBasisPoints) / 10000;
 
-        (, , liquidity) = router.addLiquidity(
-            tokenA,
-            tokenB,
-            amountA,
-            amountB,
-            amountAMin,
-            amountBMin,
-            msg.sender,
-            block.timestamp + 300
+        (,, liquidity) = router.addLiquidity(
+            tokenA, tokenB, amountA, amountB, amountAMin, amountBMin, msg.sender, block.timestamp + 300
         );
 
         emit LiquidityAdded(tokenA, tokenB, amountA, amountB, liquidity);
     }
 
-    function addLiquidityETH(address token, uint amountToken) external payable returns (uint liquidity) {
+    function addLiquidityETH(address token, uint256 amountToken) external payable returns (uint256 liquidity) {
         IERC20(token).transferFrom(msg.sender, address(this), amountToken);
 
         IERC20(token).approve(address(router), amountToken);
 
-        uint amountAMin = amountToken * (10000 - slippageBasisPoints) / 10000;
-        uint amountEthMin = uint(msg.value) * (10000 - slippageBasisPoints) / 10000;
+        uint256 amountAMin = amountToken * (10000 - slippageBasisPoints) / 10000;
+        uint256 amountEthMin = uint256(msg.value) * (10000 - slippageBasisPoints) / 10000;
 
-        (, , liquidity) = router.addLiquidityETH{ value: msg.value }(
-            token,
-            amountToken,
-            amountAMin,
-            amountEthMin,
-            msg.sender,
-            block.timestamp + 300
+        (,, liquidity) = router.addLiquidityETH{value: msg.value}(
+            token, amountToken, amountAMin, amountEthMin, msg.sender, block.timestamp + 300
         );
 
         emit LiquidityAdded(token, address(0), amountToken, msg.value, liquidity);
     }
 
-
-    function removeLiquidity(address tokenA, address tokenB, uint liquidity)
+    function removeLiquidity(address tokenA, address tokenB, uint256 liquidity)
         external
-        returns (uint amountA, uint amountB)
+        returns (uint256 amountA, uint256 amountB)
     {
         address pair = factory.getPair(tokenA, tokenB);
         require(pair != address(0), "Pool does not exist");
@@ -264,21 +249,12 @@ contract TokenSwapContract {
         IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
         IUniswapV2Pair(pair).approve(address(router), liquidity);
 
-        (amountA, amountB) = router.removeLiquidity(
-            tokenA,
-            tokenB,
-            liquidity,
-            0,
-            0,
-            msg.sender,
-            block.timestamp + 300
-        );
+        (amountA, amountB) = router.removeLiquidity(tokenA, tokenB, liquidity, 0, 0, msg.sender, block.timestamp + 300);
     }
 
-
-    function removeLiquidityETH(address token, uint liquidity)
+    function removeLiquidityETH(address token, uint256 liquidity)
         external
-        returns (uint amountToken, uint amountETH)
+        returns (uint256 amountToken, uint256 amountETH)
     {
         address pair = factory.getPair(token, router.WETH());
         require(pair != address(0), "Pool does not exist");
@@ -286,14 +262,49 @@ contract TokenSwapContract {
         IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
         IUniswapV2Pair(pair).approve(address(router), liquidity);
 
-        (amountToken, amountETH) = router.removeLiquidityETH(
-            token,
-            liquidity,
-            0,
-            0,
-            msg.sender,
-            block.timestamp + 300
-        );
+        (amountToken, amountETH) = router.removeLiquidityETH(token, liquidity, 0, 0, msg.sender, block.timestamp + 300);
     }
 
+    function getPairRatioAmount(address tokenA, address tokenB, uint256 tokenAmount)
+        external
+        view
+        returns (uint256 tokenPairAmount)
+    {
+        address pair = factory.getPair(tokenA, tokenB);
+        require(pair != address(0), "Pool does not exist");
+
+        address token0 = IUniswapV2Pair(pair).token0();
+        (uint256 reserve0, uint256 reserve1,) = IUniswapV2Pair(pair).getReserves();
+
+        uint256 reserveA;
+        uint256 reserveB;
+
+        if (token0 == tokenA) {
+            reserveA = reserve0;
+            reserveB = reserve1;
+        } else {
+            reserveA = reserve1;
+            reserveB = reserve0;
+        }
+
+        uint256 amountB = (tokenAmount * reserveB) / reserveA;
+
+        return amountB;
+    }
+
+    function isFirstLiquidity(address tokenA, address tokenB) external view returns (bool) {
+        address pair = factory.getPair(tokenA, tokenB);
+
+        require(pair != address(0), "Pool does not exist");
+
+        (uint112 reserveA, uint112 reserveB,) = IUniswapV2Pair(pair).getReserves();
+
+        // If pair exists but reserves are zero → still first liquidity
+        if (reserveA == 0 && reserveB == 0) {
+            return true;
+        }
+
+        // Otherwise, liquidity already exists
+        return false;
+    }
 }

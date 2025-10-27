@@ -7,7 +7,7 @@ import "../src/uniswapv2.sol";
 
 contract AddLiquidity is Script {
     address constant TOKENA = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // UNI
-    address constant TOKENB = 0x0E1Efea9F52f99bAAC1ca663D41119C037258D54; // JSN
+    address constant TOKENB = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505; // JSN
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -16,38 +16,25 @@ contract AddLiquidity is Script {
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
         vm.startBroadcast(pk);
 
-        uint256 amountA = 0.0001 ether; // 1e14
+        uint256 amountA = 0.0002 ether; // 1e14
+        uint256 amountB;
 
-        // Ambil pair
-        address pair = swapContract.factory().getPair(TOKENA, TOKENB);
-        require(pair != address(0), "PAIR NOT FOUND");
+        bool isFirstLiquidity = swapContract.isFirstLiquidity(TOKENA, TOKENB);
 
-        // Cek urutan token di pair
-        address token0 = IUniswapV2Pair(pair).token0();
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(pair).getReserves();
-
-        uint reserveA;
-        uint reserveB;
-
-        if (token0 == TOKENA) {
-            reserveA = reserve0;
-            reserveB = reserve1;
+        if (isFirstLiquidity) {
+            amountB = 1000 ether;
         } else {
-            reserveA = reserve1;
-            reserveB = reserve0;
+            amountB = swapContract.getPairRatioAmount(TOKENA, TOKENB, amountA);
         }
 
-        // Hitung amountB sesuai harga pool
-        uint256 amountB = (amountA * reserveB) / reserveA;
-
-        console.log("Calculated amountB required:", amountB);
+        console.log(amountB);
 
         // Approve
         IERC20(TOKENA).approve(swapContractAddr, amountA);
         IERC20(TOKENB).approve(swapContractAddr, amountB);
 
         // Add Liquidity
-        uint liquidity = swapContract.addLiquidity(TOKENA, TOKENB, amountA, amountB);
+        uint256 liquidity = swapContract.addLiquidity(TOKENA, TOKENB, amountA, amountB);
         console.log("Liquidity tokens received:", liquidity);
 
         vm.stopBroadcast();

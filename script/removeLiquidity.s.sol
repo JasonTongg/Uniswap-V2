@@ -26,23 +26,19 @@ contract RemoveLiquidity is Script {
         console.log("PAIR:", pair);
 
         // ✅ LP Token balance belongs to `user`
-        uint liquidity = IUniswapV2Pair(pair).balanceOf(user);
+        uint256 liquidity = IUniswapV2Pair(pair).balanceOf(user);
         require(liquidity > 0, "NO LP TOKENS TO REMOVE");
         console.log("User LP Balance:", liquidity);
 
         // Remove only half (optional)
-        uint removeAmount = liquidity / 2;
+        uint256 removeAmount = liquidity;
         console.log("Removing LP:", removeAmount);
 
         // Approve swap contract to spend LP tokens
         IUniswapV2Pair(pair).approve(swapContractAddr, removeAmount);
 
         // Call removeLiquidity
-        (uint amountA, uint amountB) = swapContract.removeLiquidity(
-            TOKENA,
-            TOKENB,
-            removeAmount
-        );
+        (uint256 amountA, uint256 amountB) = swapContract.removeLiquidity(TOKENA, TOKENB, removeAmount);
 
         console.log("Received UNI:", amountA);
         console.log("Received JSN:", amountB);

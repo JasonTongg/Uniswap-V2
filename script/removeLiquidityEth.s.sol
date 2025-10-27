@@ -7,7 +7,7 @@ import "../src/uniswapv2.sol";
 
 contract RemoveLiquidityETH is Script {
     // Your JSN Token
-    address constant TOKEN = 0x0E1Efea9F52f99bAAC1ca663D41119C037258D54;
+    address constant TOKEN = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -27,22 +27,19 @@ contract RemoveLiquidityETH is Script {
         console.log("PAIR:", pair);
 
         // Read LP token balance
-        uint liquidity = IUniswapV2Pair(pair).balanceOf(user);
+        uint256 liquidity = IUniswapV2Pair(pair).balanceOf(user);
         require(liquidity > 0, "NO LP TOKENS TO REMOVE");
         console.log("User LP Balance:", liquidity);
 
         // Remove only half (optional)
-        uint removeAmount = liquidity / 2;
+        uint256 removeAmount = liquidity;
         console.log("Removing LP:", removeAmount);
 
         // Approve contract to spend LP tokens
         IUniswapV2Pair(pair).approve(swapContractAddr, removeAmount);
 
         // Remove liquidity -> returns JSN and ETH
-        (uint amountToken, uint amountETH) = swapContract.removeLiquidityETH(
-            TOKEN,
-            removeAmount
-        );
+        (uint256 amountToken, uint256 amountETH) = swapContract.removeLiquidityETH(TOKEN, removeAmount);
 
         console.log("Received JSN:", amountToken);
         console.log("Received ETH:", amountETH);

@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import "../src/uniswapv2.sol";
 
 contract AddLiquidityETH is Script {
-    address constant TOKEN = 0x0E1Efea9F52f99bAAC1ca663D41119C037258D54; // JSN
+    address constant TOKEN = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505; // JSN
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -15,15 +15,22 @@ contract AddLiquidityETH is Script {
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
         vm.startBroadcast(pk);
 
-        uint256 amountToken = 5000 ether;
-        uint256 amountETH = 0.005 ether;
+        uint256 amountToken = 7000 ether;
+        uint256 amountETH;
+
+        bool isFirstLiquidity = swapContract.isFirstLiquidity(TOKEN, swapContract.router().WETH());
+
+        if (isFirstLiquidity) {
+            amountETH = 0.0005 ether;
+        } else {
+            amountETH = swapContract.getPairRatioAmount(TOKEN, swapContract.router().WETH(), amountToken);
+        }
+
+        console.log(amountETH);
 
         IERC20(TOKEN).approve(swapContractAddr, amountToken);
 
-        uint liquidity = swapContract.addLiquidityETH{value: amountETH}(
-            TOKEN,
-            amountToken
-        );
+        uint256 liquidity = swapContract.addLiquidityETH{value: amountETH}(TOKEN, amountToken);
 
         console.log("Liquidity Provided:", liquidity);
         vm.stopBroadcast();

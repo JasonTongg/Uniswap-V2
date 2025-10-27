@@ -7,7 +7,7 @@ import "../src/uniswapv2.sol";
 
 contract SwapSepoliaScript is Script {
     address constant TOKENB = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
-    address constant TOKENA = 0x0E1Efea9F52f99bAAC1ca663D41119C037258D54;
+    address constant TOKENA = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
