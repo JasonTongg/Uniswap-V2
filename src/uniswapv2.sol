@@ -120,7 +120,8 @@ contract TokenSwapContract {
         return (estimated * (10000 - slippageBasisPoints)) / 10000;
     }
 
-    function swapToken(address tokenIn, address tokenOut, uint256 amountIn) external {
+    function swapToken(address tokenIn, address tokenOut, uint256 amountIn) public returns (uint256) {
+        require(getPairAddress(tokenIn, tokenOut) != address(0), "Pool does not exist");
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(address(router), amountIn);
 
@@ -134,9 +135,12 @@ contract TokenSwapContract {
             router.swapExactTokensForTokens(amountIn, amountOutMin, path, msg.sender, block.timestamp + 300);
 
         emit Swapped(msg.sender, tokenIn, tokenOut, amountIn, amounts[1]);
+
+        return amounts[1];
     }
 
     function swapETHForToken(address tokenOut) external payable {
+        require(getPairAddress(router.WETH(), tokenOut) != address(0), "Pool does not exist");
         require(msg.value > 0, "No ETH");
 
         address[] memory path = new address[](2);
@@ -151,6 +155,7 @@ contract TokenSwapContract {
     }
 
     function swapTokenForETH(address tokenIn, uint256 amountIn) external {
+        require(getPairAddress(tokenIn, router.WETH()) != address(0), "Pool does not exist");
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(address(router), amountIn);
 
@@ -197,7 +202,7 @@ contract TokenSwapContract {
     }
 
     function createPool(address tokenA, address tokenB) external returns (address pair) {
-        pair = factory.getPair(tokenA, tokenB);
+        pair = getPairAddress(tokenA, tokenB);
         if (pair == address(0)) {
             pair = factory.createPair(tokenA, tokenB);
         }
@@ -205,7 +210,7 @@ contract TokenSwapContract {
     }
 
     function addLiquidity(address tokenA, address tokenB, uint256 amountA, uint256 amountB)
-        external
+        public
         returns (uint256 liquidity)
     {
         IERC20(tokenA).transferFrom(msg.sender, address(this), amountA);
@@ -239,11 +244,47 @@ contract TokenSwapContract {
         emit LiquidityAdded(token, address(0), amountToken, msg.value, liquidity);
     }
 
+    function zapIn(address tokenIn, address tokenA, address tokenB, uint256 amountIn)
+        external
+        returns (uint256 liquidity)
+    {
+        require(amountIn > 0, "Invalid amount");
+        require(tokenIn == tokenA || tokenIn == tokenB, "tokenIn must be tokenA or tokenB");
+        require(tokenA != tokenB, "tokenA and tokenB must be different");
+        require(tokenA == router.WETH() || tokenB == router.WETH(), "One token must be WETH");
+
+        address pair = getPairAddress(tokenA, tokenB);
+        require(pair != address(0), "Pool does not exist");
+
+        (uint112 reserveA, uint112 reserveB,) = IUniswapV2Pair(pair).getReserves();
+
+        (uint112 reserveIn, uint112 reserveOut) = tokenIn == tokenA ? (reserveA, reserveB) : (reserveB, reserveA);
+
+        uint256 amountToSwap = (amountIn * reserveOut) / (reserveIn + reserveOut);
+
+        address tokenOut = (tokenIn == tokenA) ? tokenB : tokenA;
+
+        uint256 swappedOut = swapToken(tokenIn, tokenOut, amountToSwap);
+
+        uint256 amountA;
+        uint256 amountB;
+
+        if (tokenIn == tokenA) {
+            amountA = amountIn - amountToSwap;
+            amountB = swappedOut;
+        } else {
+            amountA = swappedOut;
+            amountB = amountIn - amountToSwap;
+        }
+
+        liquidity = addLiquidity(tokenA, tokenB, amountA, amountB);
+    }
+
     function removeLiquidity(address tokenA, address tokenB, uint256 liquidity)
         external
         returns (uint256 amountA, uint256 amountB)
     {
-        address pair = factory.getPair(tokenA, tokenB);
+        address pair = getPairAddress(tokenA, tokenB);
         require(pair != address(0), "Pool does not exist");
 
         IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
@@ -256,7 +297,7 @@ contract TokenSwapContract {
         external
         returns (uint256 amountToken, uint256 amountETH)
     {
-        address pair = factory.getPair(token, router.WETH());
+        address pair = getPairAddress(token, router.WETH());
         require(pair != address(0), "Pool does not exist");
 
         IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
@@ -265,12 +306,16 @@ contract TokenSwapContract {
         (amountToken, amountETH) = router.removeLiquidityETH(token, liquidity, 0, 0, msg.sender, block.timestamp + 300);
     }
 
+    function getPairAddress(address tokenA, address tokenB) public view returns (address pair) {
+        pair = factory.getPair(tokenA, tokenB);
+    }
+
     function getPairRatioAmount(address tokenA, address tokenB, uint256 tokenAmount)
         external
         view
         returns (uint256 tokenPairAmount)
     {
-        address pair = factory.getPair(tokenA, tokenB);
+        address pair = getPairAddress(tokenA, tokenB);
         require(pair != address(0), "Pool does not exist");
 
         address token0 = IUniswapV2Pair(pair).token0();
@@ -293,18 +338,16 @@ contract TokenSwapContract {
     }
 
     function isFirstLiquidity(address tokenA, address tokenB) external view returns (bool) {
-        address pair = factory.getPair(tokenA, tokenB);
+        address pair = getPairAddress(tokenA, tokenB);
 
         require(pair != address(0), "Pool does not exist");
 
         (uint112 reserveA, uint112 reserveB,) = IUniswapV2Pair(pair).getReserves();
 
-        // If pair exists but reserves are zero → still first liquidity
         if (reserveA == 0 && reserveB == 0) {
             return true;
         }
 
-        // Otherwise, liquidity already exists
         return false;
     }
 }
