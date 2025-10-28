@@ -11,12 +11,12 @@ contract AddLiquidity is Script {
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
-        address swapContractAddr = vm.envAddress("SWAP_CONTRACT");
+        address payable swapContractAddr = payable(vm.envAddress("SWAP_CONTRACT"));
 
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
         vm.startBroadcast(pk);
 
-        uint256 amountA = 0.0002 ether; // 1e14
+        uint256 amountA = 0.0002 ether;
         uint256 amountB;
 
         bool isFirstLiquidity = swapContract.isFirstLiquidity(TOKENA, TOKENB);
@@ -24,16 +24,12 @@ contract AddLiquidity is Script {
         if (isFirstLiquidity) {
             amountB = 1000 ether;
         } else {
-            amountB = swapContract.getPairRatioAmount(TOKENA, TOKENB, amountA);
+            amountB = swapContract.getPairRatioAmount(TOKENA, TOKENB, amountA, TOKENA);
         }
 
-        console.log(amountB);
-
-        // Approve
         IERC20(TOKENA).approve(swapContractAddr, amountA);
         IERC20(TOKENB).approve(swapContractAddr, amountB);
 
-        // Add Liquidity
         uint256 liquidity = swapContract.addLiquidity(TOKENA, TOKENB, amountA, amountB);
         console.log("Liquidity tokens received:", liquidity);
 

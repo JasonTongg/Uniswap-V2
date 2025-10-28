@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import "../src/uniswapv2.sol";
 
 contract RemoveLiquidityETH is Script {
-    address constant TOKEN = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505;
+    address constant TOKEN = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -26,9 +26,8 @@ contract RemoveLiquidityETH is Script {
 
         IUniswapV2Pair(pair).approve(swapContractAddr, removeAmount);
 
-        (uint256 amountToken, uint256 amountETH) = swapContract.removeLiquidityETH(TOKEN, removeAmount);
+        (uint256 amountETH) = swapContract.zapOutEth(TOKEN, removeAmount);
 
-        console.log("Received JSN:", amountToken);
         console.log("Received ETH:", amountETH);
 
         vm.stopBroadcast();

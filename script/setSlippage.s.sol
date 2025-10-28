@@ -11,7 +11,7 @@ interface ISwap {
 contract SetSlippage is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
-        address swapContractAddr = 0x9D4eB64290887536CaBc9B9E841132145EE55F07;
+        address payable swapContractAddr = payable(0x9D4eB64290887536CaBc9B9E841132145EE55F07);
 
         vm.startBroadcast(pk);
 

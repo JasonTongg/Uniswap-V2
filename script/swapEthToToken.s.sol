@@ -12,7 +12,7 @@ contract SwapSepoliaScript is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
 
-        address swapContractAddr = vm.envAddress("SWAP_CONTRACT");
+        address payable swapContractAddr = payable(vm.envAddress("SWAP_CONTRACT"));
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
 
         uint256 amountETH = 0.2 ether;

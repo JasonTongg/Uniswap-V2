@@ -6,16 +6,16 @@ import "forge-std/console.sol";
 import "../src/uniswapv2.sol";
 
 contract AddLiquidityETH is Script {
-    address constant TOKEN = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505; // JSN
+    address constant TOKEN = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // UNI
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
-        address swapContractAddr = vm.envAddress("SWAP_CONTRACT");
+        address payable swapContractAddr = payable(vm.envAddress("SWAP_CONTRACT"));
 
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
         vm.startBroadcast(pk);
 
-        uint256 amountToken = 7000 ether;
+        uint256 amountToken = 0.006 ether;
         uint256 amountETH;
 
         bool isFirstLiquidity = swapContract.isFirstLiquidity(TOKEN, swapContract.router().WETH());
@@ -23,7 +23,7 @@ contract AddLiquidityETH is Script {
         if (isFirstLiquidity) {
             amountETH = 0.0005 ether;
         } else {
-            amountETH = swapContract.getPairRatioAmount(TOKEN, swapContract.router().WETH(), amountToken);
+            amountETH = swapContract.getPairRatioAmount(TOKEN, swapContract.router().WETH(), amountToken, TOKEN);
         }
 
         console.log(amountETH);
