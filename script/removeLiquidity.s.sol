@@ -27,9 +27,6 @@ contract RemoveLiquidity is Script {
 
         (uint256 amountA, uint256 amountB) = swapContract.removeLiquidity(TOKENA, TOKENB, removeAmount);
 
-        console.log("Received UNI:", amountA);
-        console.log("Received JSN:", amountB);
-
         vm.stopBroadcast();
     }
 }

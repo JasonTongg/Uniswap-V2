@@ -26,13 +26,9 @@ contract AddLiquidityETH is Script {
             amountETH = swapContract.getPairRatioAmount(TOKEN, swapContract.router().WETH(), amountToken, TOKEN);
         }
 
-        console.log(amountETH);
-
         IERC20(TOKEN).approve(swapContractAddr, amountToken);
 
         uint256 liquidity = swapContract.addLiquidityETH{value: amountETH}(TOKEN, amountToken);
-
-        console.log("Liquidity Provided:", liquidity);
         vm.stopBroadcast();
     }
 }

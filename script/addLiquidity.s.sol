@@ -7,7 +7,7 @@ import "../src/uniswapv2.sol";
 
 contract AddLiquidity is Script {
     address constant TOKENA = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // UNI
-    address constant TOKENB = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505; // JSN
+    address constant TOKENB = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // JSN
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -31,7 +31,6 @@ contract AddLiquidity is Script {
         IERC20(TOKENB).approve(swapContractAddr, amountB);
 
         uint256 liquidity = swapContract.addLiquidity(TOKENA, TOKENB, amountA, amountB);
-        console.log("Liquidity tokens received:", liquidity);
 
         vm.stopBroadcast();
     }

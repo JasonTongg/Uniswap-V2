@@ -6,7 +6,8 @@ import "forge-std/console.sol";
 import "../src/uniswapv2.sol";
 
 contract RemoveLiquidityETH is Script {
-    address constant TOKEN = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505;
+    address constant TOKENA = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address constant TOKENB = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -17,15 +18,14 @@ contract RemoveLiquidityETH is Script {
 
         vm.startBroadcast(pk);
 
-        address weth = swapContract.router().WETH();
-        address pair = swapContract.factory().getPair(TOKEN, weth);
+        address pair = swapContract.factory().getPair(TOKENA, TOKENB);
         uint256 liquidity = IUniswapV2Pair(pair).balanceOf(user);
 
         uint256 removeAmount = liquidity;
 
         IUniswapV2Pair(pair).approve(swapContractAddr, removeAmount);
 
-        (uint256 amountToken, uint256 amountETH) = swapContract.removeLiquidityETH(TOKEN, removeAmount);
+        (uint256 amountETH) = swapContract.zapOut(TOKENA, TOKENA, TOKENB, removeAmount);
 
         vm.stopBroadcast();
     }

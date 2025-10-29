@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/uniswapv2.sol";
-import {JasonToken} from "../src/token.sol";
+import {MyERC20} from "../src/token.sol";
 
 interface IERC20Decimals is IERC20 {
     function decimals() external view returns (uint8);
@@ -22,6 +22,7 @@ contract TokenSwapTest is Test {
     address constant TOKEN_WETH = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14; // example: WETH
     address constant TOKEN_UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984; // example: UNI
     address constant TOKEN_JSN = 0x6c64E8278B7d5513143D59Bf1484B0e6972e4505; // example: JSN
+    address constant TOKEN_USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // example: USDC
 
     TokenSwapContract swapContract;
 
@@ -65,6 +66,7 @@ contract TokenSwapTest is Test {
         vm.startPrank(user);
 
         uint256 amountIn = 5e15;
+        deal(TOKEN_UNI, user, 1e18);
 
         uint256 balB = IERC20(TOKEN_UNI).balanceOf(user);
         uint256 balA = user.balance;
@@ -105,10 +107,7 @@ contract TokenSwapTest is Test {
         vm.startPrank(user);
         uint256 amountIn = 1e16;
         uint256 amountOut = swapContract.getPriceETHtoToken(TOKEN_UNI, amountIn);
-
-        console.log("Estimated UNI for 0.01 ETH:", amountOut);
         assertGt(amountOut, 0, "Price query failed");
-
         vm.stopPrank();
     }
 
@@ -116,10 +115,7 @@ contract TokenSwapTest is Test {
         vm.startPrank(user);
         uint256 amountIn = 1e16;
         uint256 amountOut = swapContract.getPriceETHtoToken(TOKEN_UNI, amountIn);
-
-        console.log("Estimated ETH for 0.01 UNI:", amountOut);
         assertGt(amountOut, 0, "Price query failed");
-
         vm.stopPrank();
     }
 
@@ -127,10 +123,7 @@ contract TokenSwapTest is Test {
         vm.startPrank(user);
         uint256 amountIn = 1e16;
         uint256 amountOut = swapContract.getPriceTokenToToken(TOKEN_UNI, TOKEN_JSN, amountIn);
-
-        console.log("Estimated JSN for 0.01 UNI:", amountOut);
         assertGt(amountOut, 0, "Price query failed");
-
         vm.stopPrank();
     }
 
@@ -152,7 +145,6 @@ contract TokenSwapTest is Test {
 
     function testGetPairAddress() public view {
         address pairAddress = swapContract.getPairAddress(TOKEN_WETH, TOKEN_UNI);
-        console.log("Pair address WETH-UNI:", pairAddress);
         assertNotEq(pairAddress, address(0), "Pair does not exist");
     }
 
@@ -164,7 +156,6 @@ contract TokenSwapTest is Test {
 
     function testIsFirstLiquidity() public {
         bool isFirst = swapContract.isFirstLiquidity(TOKEN_WETH, TOKEN_UNI);
-        console.log("Is first liquidity WETH-UNI:", isFirst);
         assertFalse(isFirst, "Liquidity already exists, should be false");
 
         swapContract.createPool(TOKEN_WETH, address(1011));
@@ -191,26 +182,26 @@ contract TokenSwapTest is Test {
     function testAddLiquidity() public {
         vm.startPrank(user);
 
-        uint256 amountA = 1e14;
+        uint256 amountA = 1e12;
         uint256 amountB = swapContract.getPairRatioAmount(TOKEN_JSN, TOKEN_UNI, amountA, TOKEN_JSN);
+        deal(TOKEN_UNI, user, amountB + 1e15);
+        deal(TOKEN_JSN, user, amountA + 1e15);
 
         IERC20(TOKEN_JSN).approve(address(swapContract), amountA);
         IERC20(TOKEN_UNI).approve(address(swapContract), amountB);
 
         uint256 liquidity = swapContract.addLiquidity(TOKEN_JSN, TOKEN_UNI, amountA, amountB);
-
-        console.log("Liquidity tokens received:", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         amountB = 3e15;
         amountA = swapContract.getPairRatioAmount(TOKEN_JSN, TOKEN_UNI, amountB, TOKEN_UNI);
+        deal(TOKEN_UNI, user, amountB + 1e15);
+        deal(TOKEN_JSN, user, amountA + 1e15);
 
         IERC20(TOKEN_JSN).approve(address(swapContract), amountA);
         IERC20(TOKEN_UNI).approve(address(swapContract), amountB);
 
         liquidity = swapContract.addLiquidity(TOKEN_JSN, TOKEN_UNI, amountA, amountB);
-
-        console.log("Liquidity tokens received:", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         vm.stopPrank();
@@ -219,7 +210,7 @@ contract TokenSwapTest is Test {
     function testNewAddLiquidity() public {
         vm.startPrank(user);
 
-        JasonToken newToken = new JasonToken(user, user);
+        MyERC20 newToken = new MyERC20(user, user, "JASON", "JSN", 1000000);
 
         uint256 amountA = 1e14;
         uint256 amountB = 2e14;
@@ -234,7 +225,6 @@ contract TokenSwapTest is Test {
         IERC20(TOKEN_UNI).approve(address(swapContract), amountB);
 
         uint256 liquidity = swapContract.addLiquidity(address(newToken), TOKEN_UNI, amountA, amountB);
-        console.log("Liquidity tokens received (1st):", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         assertEq(swapContract.isFirstLiquidity(address(newToken), TOKEN_UNI), false);
@@ -246,7 +236,6 @@ contract TokenSwapTest is Test {
         IERC20(TOKEN_UNI).approve(address(swapContract), amountB);
 
         liquidity = swapContract.addLiquidity(address(newToken), TOKEN_UNI, amountA, amountB);
-        console.log("Liquidity tokens received (2nd):", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         vm.stopPrank();
@@ -261,8 +250,6 @@ contract TokenSwapTest is Test {
         IERC20(TOKEN_JSN).approve(address(swapContract), amountA);
 
         uint256 liquidity = swapContract.addLiquidityETH{value: amountB}(TOKEN_JSN, amountA);
-
-        console.log("Liquidity tokens received:", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         amountB = 3e14;
@@ -271,8 +258,6 @@ contract TokenSwapTest is Test {
         IERC20(TOKEN_JSN).approve(address(swapContract), amountA);
 
         liquidity = swapContract.addLiquidityETH{value: amountB}(TOKEN_JSN, amountA);
-
-        console.log("Liquidity tokens received:", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         vm.stopPrank();
@@ -281,7 +266,7 @@ contract TokenSwapTest is Test {
     function testNewAddLiquidityETH() public {
         vm.startPrank(user);
 
-        JasonToken newToken = new JasonToken(user, user);
+        MyERC20 newToken = new MyERC20(user, user, "JASON", "JSN", 1000000);
 
         uint256 amountA = 1e14;
         uint256 amountB = 2e14;
@@ -295,7 +280,6 @@ contract TokenSwapTest is Test {
         newToken.approve(address(swapContract), amountA);
 
         uint256 liquidity = swapContract.addLiquidityETH{value: amountB}(address(newToken), amountA);
-        console.log("Liquidity tokens received (1st):", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         assertEq(swapContract.isFirstLiquidity(address(newToken), TOKEN_WETH), false);
@@ -306,7 +290,6 @@ contract TokenSwapTest is Test {
         newToken.approve(address(swapContract), amountA);
 
         liquidity = swapContract.addLiquidityETH{value: amountB}(address(newToken), amountA);
-        console.log("Liquidity tokens received (2nd):", liquidity);
         assertGt(liquidity, 0, "Add liquidity failed");
 
         vm.stopPrank();
@@ -359,7 +342,7 @@ contract TokenSwapTest is Test {
     function testZapIn() public {
         vm.startPrank(user);
 
-        uint256 amountIn = 5000e18;
+        uint256 amountIn = 1e12;
 
         uint256 balJSN = IERC20(TOKEN_JSN).balanceOf(user);
 
@@ -440,6 +423,22 @@ contract TokenSwapTest is Test {
         swapContract.zapOutEth(TOKEN_JSN, liquidityBefore / 2);
 
         uint256 liquidityAfter = swapContract.getLiquidityBalance(TOKEN_JSN, TOKEN_WETH, user);
+        assertEq(liquidityAfter, liquidityBefore / 2, "Liquidity balance incorrect after removal");
+
+        vm.stopPrank();
+    }
+
+    function testZapOut() public {
+        vm.startPrank(user);
+
+        uint256 liquidityBefore = swapContract.getLiquidityBalance(TOKEN_USDC, TOKEN_UNI, user);
+        address pair = swapContract.getPairAddress(TOKEN_USDC, TOKEN_UNI);
+
+        IUniswapV2Pair(pair).approve(address(swapContract), liquidityBefore / 2);
+
+        swapContract.zapOut(TOKEN_UNI, TOKEN_USDC, TOKEN_UNI, liquidityBefore / 2);
+
+        uint256 liquidityAfter = swapContract.getLiquidityBalance(TOKEN_USDC, TOKEN_UNI, user);
         assertEq(liquidityAfter, liquidityBefore / 2, "Liquidity balance incorrect after removal");
 
         vm.stopPrank();

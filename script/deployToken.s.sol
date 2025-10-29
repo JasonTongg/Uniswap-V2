@@ -8,9 +8,12 @@ contract DeployTokenSwap is Script {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(pk);
 
-        new JasonToken(
+        new MyERC20(
             0xeFF3521fb13228C767Ad6Dc3b934F9eFAC9c56aD,
-            0xeFF3521fb13228C767Ad6Dc3b934F9eFAC9c56aD
+            0xeFF3521fb13228C767Ad6Dc3b934F9eFAC9c56aD,
+            "JASON",
+            "JSN",
+            1000000
         );
 
         vm.stopBroadcast();

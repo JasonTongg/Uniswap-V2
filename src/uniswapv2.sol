@@ -129,6 +129,9 @@ contract TokenSwapContract {
 
         uint256 amountOutMin = _getMinAmountOut(path, amountIn);
 
+        bool isEnoughLiquidity = _checkEnoughLiquidity(tokenIn, tokenOut, tokenIn, amountIn);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
+
         uint256[] memory amounts =
             router.swapExactTokensForTokens(amountIn, amountOutMin, path, msg.sender, block.timestamp + 300);
 
@@ -147,6 +150,9 @@ contract TokenSwapContract {
 
         uint256 amountOutMin = _getMinAmountOut(path, msg.value);
 
+        bool isEnoughLiquidity = _checkEnoughLiquidity(router.WETH(), tokenOut, router.WETH(), msg.value);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
+
         uint256[] memory amounts =
             router.swapExactETHForTokens{value: msg.value}(amountOutMin, path, msg.sender, block.timestamp + 300);
 
@@ -164,6 +170,9 @@ contract TokenSwapContract {
         path[1] = router.WETH();
 
         uint256 amountOutMin = _getMinAmountOut(path, amountIn);
+
+        bool isEnoughLiquidity = _checkEnoughLiquidity(tokenIn, router.WETH(), tokenIn, amountIn);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
 
         uint256[] memory amounts =
             router.swapExactTokensForETH(amountIn, amountOutMin, path, msg.sender, block.timestamp + 300);
@@ -368,6 +377,9 @@ contract TokenSwapContract {
         path[0] = tokenIn;
         path[1] = tokenOut;
 
+        bool isEnoughLiquidity = _checkEnoughLiquidity(tokenIn, tokenOut, tokenIn, swapAmount);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
+
         uint256[] memory amounts =
             router.swapExactTokensForTokens(swapAmount, 0, path, address(this), block.timestamp + 300);
 
@@ -409,6 +421,9 @@ contract TokenSwapContract {
         path[0] = router.WETH();
         path[1] = token;
 
+        bool isEnoughLiquidity = _checkEnoughLiquidity(router.WETH(), token, router.WETH(), swapAmount);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
+
         uint256[] memory amounts =
             router.swapExactETHForTokens{value: swapAmount}(0, path, address(this), block.timestamp + 300);
 
@@ -444,6 +459,9 @@ contract TokenSwapContract {
         path[1] = router.WETH();
 
         IERC20(token).approve(address(router), swapAmount);
+
+        bool isEnoughLiquidity = _checkEnoughLiquidity(token, router.WETH(), token, swapAmount);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
 
         uint256[] memory amounts =
             router.swapExactTokensForETH(swapAmount, 0, path, address(this), block.timestamp + 300);
@@ -487,9 +505,66 @@ contract TokenSwapContract {
 
         IERC20(token).approve(address(router), swapAmount);
 
+        bool isEnoughLiquidity = _checkEnoughLiquidity(token, router.WETH(), token, swapAmount);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
+
         uint256[] memory amounts = router.swapExactTokensForETH(swapAmount, 0, path, msg.sender, block.timestamp + 300);
 
         return amounts[1] + amountETH;
+    }
+
+    function zapOut(address tokenOut, address tokenA, address tokenB, uint256 liquidity)
+        external
+        returns (uint256 amountEth)
+    {
+        address pair = getPairAddress(tokenA, tokenB);
+        require(pair != address(0), "Pool does not exist");
+        require(tokenA == tokenOut || tokenB == tokenOut, "tokenOut must be tokenA or tokenB");
+        require(tokenA != tokenB, "tokenA and tokenB must be different");
+        require(liquidity > 0, "No LP to remove");
+
+        uint256 amountA;
+        uint256 amountB;
+
+        IUniswapV2Pair(pair).transferFrom(msg.sender, address(this), liquidity);
+        IUniswapV2Pair(pair).approve(address(router), liquidity);
+
+        (amountA, amountB) =
+            router.removeLiquidity(tokenA, tokenB, liquidity, 0, 0, address(this), block.timestamp + 300);
+
+        address selectedSwapToken = tokenOut == tokenA ? tokenB : tokenA;
+
+        address[] memory path = new address[](2);
+        path[0] = selectedSwapToken;
+        path[1] = tokenOut;
+
+        uint256 swapAmount = tokenOut == tokenA ? amountB : amountA;
+        uint256 otherAmount = tokenOut == tokenA ? amountA : amountB;
+
+        IERC20(selectedSwapToken).approve(address(router), swapAmount);
+
+        bool isEnoughLiquidity = _checkEnoughLiquidity(tokenA, tokenB, selectedSwapToken, swapAmount);
+        require(isEnoughLiquidity, "Not enough liquidity for swap");
+
+        uint256[] memory amounts =
+            router.swapExactTokensForTokens(swapAmount, 0, path, msg.sender, block.timestamp + 300);
+
+        return amounts[1] + otherAmount;
+    }
+
+    function _checkEnoughLiquidity(address tokenA, address tokenB, address selectedSwapToken, uint256 swapAmount)
+        public
+        view
+        returns (bool)
+    {
+        address pair = getPairAddress(tokenA, tokenB);
+        require(pair != address(0), "Pair does not exist");
+
+        (uint112 reserveA, uint112 reserveB,) = IUniswapV2Pair(pair).getReserves();
+
+        uint112 reserveSelected = selectedSwapToken == tokenA ? reserveA : reserveB;
+
+        return reserveSelected >= uint112(swapAmount);
     }
 
     receive() external payable {

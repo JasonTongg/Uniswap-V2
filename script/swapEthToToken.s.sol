@@ -7,7 +7,7 @@ import "../src/uniswapv2.sol";
 
 contract SwapSepoliaScript is Script {
     // Token you want to buy (UNI on Sepolia)
-    address constant TOKEN_OUT = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address constant TOKEN_OUT = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -15,10 +15,9 @@ contract SwapSepoliaScript is Script {
         address payable swapContractAddr = payable(vm.envAddress("SWAP_CONTRACT"));
         TokenSwapContract swapContract = TokenSwapContract(swapContractAddr);
 
-        uint256 amountETH = 0.2 ether;
+        uint256 amountETH = 0.05 ether;
 
         uint256 expectedUNI = swapContract.getPriceETHtoToken(TOKEN_OUT, amountETH);
-        console.log("If you swap", amountETH / 1e18, "ETH you will receive approx:", expectedUNI);
 
         vm.startBroadcast(pk);
 

@@ -22,14 +22,10 @@ contract RemoveLiquidityETH is Script {
         uint256 liquidity = IUniswapV2Pair(pair).balanceOf(user);
 
         uint256 removeAmount = liquidity;
-        console.log("Removing LP:", removeAmount);
 
         IUniswapV2Pair(pair).approve(swapContractAddr, removeAmount);
 
         (uint256 amountETH) = swapContract.zapOutEth(TOKEN, removeAmount);
-
-        console.log("Received ETH:", amountETH);
-
         vm.stopBroadcast();
     }
 }

@@ -18,8 +18,6 @@ contract SetSlippage is Script {
         // Set 10% slippage (1000 basis points)
         ISwap(swapContractAddr).setSlippageBP(9000);
 
-        console.log("Slippage updated to 10% (1000 BP)");
-
         vm.stopBroadcast();
     }
 }

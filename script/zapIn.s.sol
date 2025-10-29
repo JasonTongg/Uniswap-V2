@@ -22,7 +22,6 @@ contract AddLiquidity is Script {
         IERC20(TOKENB).approve(swapContractAddr, amountA);
 
         uint256 liquidity = swapContract.zapIn(TOKENA, TOKENA, TOKENB, amountA);
-        console.log("Liquidity tokens received:", liquidity);
 
         vm.stopBroadcast();
     }

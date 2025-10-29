@@ -12,7 +12,7 @@ interface IERC20Minimal {
 
 contract SwapTokenToToken is Script {
     address constant TOKEN_OUT = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address constant TOKEN_IN = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
+    address constant TOKEN_IN = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
@@ -23,22 +23,15 @@ contract SwapTokenToToken is Script {
         vm.startBroadcast(pk);
 
         address user = vm.addr(pk);
-        console.log("Sender:", user);
 
         uint256 balanceIn = IERC20Minimal(TOKEN_IN).balanceOf(user);
         require(balanceIn > 0, "No tokenIn balance");
-        console.log("Your tokenIn balance:", balanceIn);
 
         uint256 expectedOut = swapContract.getPriceTokenToToken(TOKEN_IN, TOKEN_OUT, balanceIn);
-        console.log("Swap preview:");
-        console.log("TokenIn:", balanceIn);
-        console.log("Expected TokenOut:", expectedOut);
 
         IERC20Minimal(TOKEN_IN).approve(address(swapContract), balanceIn);
-        console.log("Approved tokenIn to swap contract");
 
         swapContract.swapToken(TOKEN_IN, TOKEN_OUT, balanceIn);
-        console.log("Swap tokenIn to tokenOut successful");
 
         vm.stopBroadcast();
     }

@@ -22,22 +22,15 @@ contract SwapUniToEth is Script {
         vm.startBroadcast(pk);
 
         address user = vm.addr(pk);
-        console.log("Sender:", user);
 
         uint256 uniBalance = IERC20Minimal(UNI).balanceOf(user);
         require(uniBalance > 0, "No UNI to swap");
-        console.log("Your UNI balance:", uniBalance);
 
         uint256 expectedETH = swapContract.getPriceTokenToETH(UNI, uniBalance);
-        console.log("If you swap UNI you will receive approx (wei ETH):");
-        console.logUint(uniBalance);
-        console.logUint(expectedETH);
 
         IERC20Minimal(UNI).approve(address(swapContract), uniBalance);
-        console.log("Approved swap contract to spend", uniBalance, "UNI");
 
         swapContract.swapTokenForETH(UNI, uniBalance);
-        console.log("Swapped UNI to ETH successfully");
 
         vm.stopBroadcast();
     }
