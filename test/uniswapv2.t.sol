@@ -124,6 +124,13 @@ contract TokenSwapTest is Test {
         uint256 amountIn = 1e16;
         uint256 amountOut = swapContract.getPriceTokenToToken(TOKEN_UNI, TOKEN_JSN, amountIn);
         assertGt(amountOut, 0, "Price query failed");
+        amountIn = 3e16;
+        uint256 amountOut2 = swapContract.getPriceTokenToToken(TOKEN_UNI, TOKEN_JSN, amountIn);
+        assertGt(amountOut2, 0, "Price query failed");
+
+        console.log(amountOut);
+        console.log(amountOut2);
+        assertNotEq(amountOut, amountOut2);
         vm.stopPrank();
     }
 
