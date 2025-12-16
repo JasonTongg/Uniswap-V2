@@ -8,6 +8,10 @@ Uniswap V2 is a decentralized exchange protocol based on an automated market mak
 
 This repo includes smart contracts, tests, and scripts to work with Uniswap V2. ideal for developers who want a hands-on example of deploying, testing, and interacting with Uniswap V2 on Ethereum or compatible networks.
 
+
+- **Live Product:** [Zypher](https://zypher-dex.vercel.app/)
+- **Frontend using Nextjs:** [Zypher Frontend](https://github.com/JasonTongg/Zypher)
+
 ## What's Inside
 
 - `src/` — example solidity contracts interacting with Uniswap V2  
