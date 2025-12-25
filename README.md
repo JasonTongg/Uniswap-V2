@@ -1,3 +1,5 @@
+<img width="1549" height="584" alt="image" src="https://github.com/user-attachments/assets/1753c2c8-56c5-4242-8762-cb8ffd84d05d" />
+
 # Uniswap Integration
 
 This repository demonstrates integration and usage of the Uniswap V2 protocol. including liquidity provisioning, token swaps, and general on-chain interactions using Uniswap V2.  
